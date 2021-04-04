@@ -6,7 +6,8 @@ const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 export default class BleModule {
   constructor() {
-    this.isConnecting = false; // 蓝牙是否处于连接状态
+    this.isConnecting = false; // 蓝牙是否处于正在连接状态
+    this.isConnected = false; // 蓝牙是否已经连接设备
     this.bleState = 'off'; // 蓝牙打开状态
     this.peripheralId = null; // 当前连接设备id
     this.serviceUUID = null;
@@ -110,6 +111,7 @@ export default class BleModule {
       BleManager.connect(id)
         .then(() => {
           console.log('Connect success');
+          this.isConnected = true;
           return BleManager.retrieveServices(id); // 扫描连接设备服务和特征
         })
         .then(peripheralInfo => {
@@ -134,6 +136,7 @@ export default class BleModule {
     BleManager.disconnect(this.peripheralId)
       .then(() => {
         console.log('disconnect success');
+        this.isConnected = false;
         this.peripheralId = null;
         this.serviceUUID = null;
         this.characteristicUUID = null;
@@ -268,13 +271,17 @@ export default class BleModule {
    * 请求激活蓝牙
    */
   enableBluetooth() {
-    BleManager.enableBluetooth()
-      .then(() => {
-        console.log('The bluetooth is already enabled or the user confirm');
-      })
-      .catch(err => {
-        console.log('The user refuse to enable bluetooth: ', err);
-      });
+    return new Promise((resolve, reject) => {
+      BleManager.enableBluetooth()
+        .then(() => {
+          console.log('The bluetooth is already enabled or the user confirm');
+          resolve();
+        })
+        .catch(err => {
+          console.log('The user refuse to enable bluetooth: ', err);
+          reject(err);
+        });
+    });
   }
 
   /**
