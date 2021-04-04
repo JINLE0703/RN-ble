@@ -9,7 +9,8 @@ export default function Detail(props) {
   const {route} = props;
   const peripheralInfo = route.params.peripheralInfo; // 已连接外围设备信息
   const [receiveData, setReceiveData] = useState([]); // 接收的数据的缓存列表
-  const [intervalTime, setIntervalTime] = useState('1000'); // 间隔时间
+  const [isCollecting, setIsCollecting] = useState(false); // 是否正在采集数据
+  const [intervalTime, setIntervalTime] = useState('1000'); // 采集间隔时间
   const [mode, setMode] = useState('notify'); // 模式 notify or read
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export default function Detail(props) {
       updateValueListener.remove();
       disconnect();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -28,9 +30,24 @@ export default function Detail(props) {
    */
   const handleUpdateValue = data => {
     console.log('BleManagerDidUpdateValueForCharacteristic', data);
-    // const {value} = data;
-    // let str = Ble.byteToString(value);
-    // setReceiveData(prevData => [...prevData, str]);
+    const {value} = data;
+    const str = Ble.byteToString(value); // 转码
+    const obj = createCollectData(str);
+    if (mode === 'notify') {
+      // 主动上传模式
+      setReceiveData(prevData => [...prevData, obj]);
+    }
+  };
+
+  /**
+   * 创建接收数据的对象
+   */
+  const createCollectData = value => {
+    const obj = {};
+    obj.value = value;
+    obj.time = new Date().toLocaleString();
+    obj.key = Math.random() + Date.now();
+    return obj;
   };
 
   /**
@@ -38,6 +55,34 @@ export default function Detail(props) {
    */
   const disconnect = () => {
     Ble.disconnect();
+  };
+
+  /**
+   * 处理采集开关
+   */
+  const handleCollect = () => {
+    if (isCollecting) {
+      // 停止采集
+      Ble.writeWithoutResponse('stop collect ').then(() => {
+        Ble.stopNotification();
+        setIsCollecting(false);
+      });
+      return;
+    }
+    Ble.writeWithoutResponse('start collect ').then(() => {
+      Ble.writeWithoutResponse(`interval ${intervalTime} ms `).then(() => {
+        Ble.startNotification().then(() => {
+          setIsCollecting(true);
+        });
+      });
+    });
+  };
+
+  /**
+   * 处理读取数据
+   */
+  const handleRead = () => {
+    console.log(mode);
   };
 
   /**
@@ -59,8 +104,11 @@ export default function Detail(props) {
       <CollectList data={receiveData} />
       <View style={styles.control}>
         <View style={styles.btnWrapper}>
-          <Button type="primary" size="large">
-            开启采集
+          <Button
+            type={isCollecting ? 'warning' : 'primary'}
+            size="large"
+            onPress={handleCollect}>
+            {isCollecting ? '停止采集' : '开启采集'}
           </Button>
         </View>
         <View style={styles.textInputWrapper}>
@@ -79,11 +127,16 @@ export default function Detail(props) {
             onValueChange={handleToggleMode}
             trackColor={{false: '#D3EAFB', true: '#9FD2F6'}}
             thumbColor="#108EE9"
+            disabled={isCollecting}
           />
           <Text>响应模式</Text>
         </View>
         <View style={styles.btnWrapper}>
-          <Button type="primary" size="large" disabled={mode === 'notify'}>
+          <Button
+            type="primary"
+            size="large"
+            disabled={mode === 'notify'}
+            onPress={handleRead}>
             读取
           </Button>
         </View>
