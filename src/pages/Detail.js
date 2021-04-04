@@ -6,9 +6,8 @@ import {Button} from '@ant-design/react-native';
 import {Ble} from '../untils/global';
 
 export default function Detail(props) {
-  const {route} = props;
-  const peripheralInfo = route.params.peripheralInfo; // 已连接外围设备信息
-  const [receiveData, setReceiveData] = useState([]); // 接收的数据的缓存列表
+  const [collectData, setCollectData] = useState(null); // 接受的数据对象
+  const [collectDataList, setCollectDataList] = useState([]); // 接收的数据的缓存列表
   const [isCollecting, setIsCollecting] = useState(false); // 是否正在采集数据
   const [intervalTime, setIntervalTime] = useState('1000'); // 采集间隔时间
   const [mode, setMode] = useState('notify'); // 模式 notify or read
@@ -33,11 +32,18 @@ export default function Detail(props) {
     const {value} = data;
     const str = Ble.byteToString(value); // 转码
     const obj = createCollectData(str);
-    if (mode === 'notify') {
-      // 主动上传模式
-      setReceiveData(prevData => [...prevData, obj]);
-    }
+    setCollectData(obj);
   };
+
+  /**
+   * 监听collectData
+   */
+  useEffect(() => {
+    if (collectData && mode === 'notify') {
+      setCollectDataList(prevData => [...prevData, collectData]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectData]);
 
   /**
    * 创建接收数据的对象
@@ -82,7 +88,7 @@ export default function Detail(props) {
    * 处理读取数据
    */
   const handleRead = () => {
-    console.log(mode);
+    setCollectDataList(prevData => [...prevData, collectData]);
   };
 
   /**
@@ -101,7 +107,7 @@ export default function Detail(props) {
 
   return (
     <View style={styles.container}>
-      <CollectList data={receiveData} />
+      <CollectList data={collectDataList} />
       <View style={styles.control}>
         <View style={styles.btnWrapper}>
           <Button
@@ -135,7 +141,7 @@ export default function Detail(props) {
           <Button
             type="primary"
             size="large"
-            disabled={mode === 'notify'}
+            disabled={!isCollecting || mode === 'notify'}
             onPress={handleRead}>
             读取
           </Button>

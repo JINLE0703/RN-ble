@@ -1,4 +1,4 @@
-import React, {useRef, useEffect} from 'react';
+import React, {useRef} from 'react';
 import {StyleSheet, FlatList, View} from 'react-native';
 import CollectItem from './CollectItem';
 
