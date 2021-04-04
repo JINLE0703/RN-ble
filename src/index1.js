@@ -1,16 +1,17 @@
-import React, {useEffect, useState} from 'react';
-import {NavigationContainer} from '@react-navigation/native';
+import React, {useState, useEffect} from 'react';
 import {
-  CardStyleInterpolators,
-  createStackNavigator,
-  HeaderStyleInterpolators,
-} from '@react-navigation/stack';
-import Home from './pages/Home';
-import Detail from './pages/Detail';
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  FlatList,
+  Alert,
+} from 'react-native';
 
-import {Ble} from './untils/global';
+import BleModule from './modules/BleModule';
 
-const Stack = createStackNavigator(); // 创建堆栈式导航器
+const Ble = new BleModule();
+global.Ble = Ble;
 
 export default function App() {
   const [bleList, setBleList] = useState([]); // 扫描的蓝牙列表
@@ -66,7 +67,6 @@ export default function App() {
    */
   const handleUpdateState = args => {
     console.log('BleManagerDidUpdateState', args);
-    Ble.bleState = args.state;
   };
 
   /**
@@ -82,6 +82,7 @@ export default function App() {
 
   /**
    * 扫描发现新的外围设备
+   * @param {id, name, rssi} args
    */
   const handleDiscoverPeripheral = args => {
     console.log('BleManagerDiscoverPeripheral', args);
@@ -96,6 +97,7 @@ export default function App() {
 
   /**
    * 处理断开外围设备
+   * @param {*} args
    */
   const handleDisconnectPeripheral = args => {
     console.log('BleManagerDisconnectPeripheral', args);
@@ -103,28 +105,102 @@ export default function App() {
 
   /**
    * 处理接收新数据
+   * @param {*} data
    */
   const handleUpdateValue = data => {
     console.log('BleManagerDidUpdateValueForCharacteristic', data);
-    // const {value} = data;
-    // let str = Ble.byteToString(value);
-    // setReceiveData(prevData => [...prevData, str]);
+    const {value} = data;
+    let str = Ble.byteToString(value);
+    setReceiveData(prevData => [...prevData, str]);
+  };
+
+  /**
+   * 扫描外围设备
+   */
+  const scan = () => {
+    Ble.scan();
+  };
+
+  /**
+   * 连接设备
+   * @param {*}} id
+   */
+  const connect = id => {
+    Ble.connect(id).then(info => {
+      setIsConnected(true);
+      Ble.startNotification();
+      Ble.writeWithoutResponse('start');
+    });
+  };
+
+  /**
+   * 断开设备
+   */
+  const disconnect = () => {
+    Ble.disconnect();
+    setIsConnected(false);
+  };
+
+  /**
+   * 读数据
+   */
+  const read = () => {
+    Ble.read().then(readData => {
+      Alert.alert(readData);
+      console.log(readData);
+    });
+  };
+
+  const renderItem = item => {
+    let data = item.item;
+    return (
+      <View>
+        <Text>id: {data.id}</Text>
+        <Text>name: {data.name}</Text>
+        <Text>rssi: {data.rssi}</Text>
+        <TouchableOpacity
+          onPress={() => {
+            connect(data.id);
+          }}>
+          <View style={styles.btn}>
+            <Text>connect</Text>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={disconnect}>
+          <View style={styles.btn}>
+            <Text>disconnect</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+    );
   };
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        headerMode="float"
-        screenOptions={{
-          headerTitleAlign: 'center', // 头部标签居中
-          headerStyleInterpolator: HeaderStyleInterpolators.forUIKit, // 头部返回动画
-          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS, // 主题返回动画
-          gestureEnabled: true, // 开启手势
-          gestureDirection: 'horizontal', // 手势方向
-        }}>
-        <Stack.Screen name="蓝牙列表" component={Home} />
-        <Stack.Screen name="Detail" component={Detail} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <View style={styles.container}>
+      <TouchableOpacity onPress={scan}>
+        <View style={styles.btn}>
+          <Text>scan</Text>
+        </View>
+      </TouchableOpacity>
+      <FlatList data={bleList} renderItem={renderItem} />
+      <Text>{receiveData.map(item => item)}</Text>
+      <TouchableOpacity onPress={read}>
+        <View style={styles.btn}>
+          <Text>read</Text>
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  btn: {
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ddd',
+  },
+});

@@ -1,4 +1,4 @@
-import {Platform, NativeModules, NativeEventEmitter} from 'react-native';
+import {NativeModules, NativeEventEmitter} from 'react-native';
 import BleManager from 'react-native-ble-manager';
 
 const BleManagerModule = NativeModules.BleManager;
@@ -9,7 +9,6 @@ export default class BleModule {
     this.isConnecting = false; // 蓝牙是否处于连接状态
     this.bleState = 'off'; // 蓝牙打开状态
     this.peripheralId = null; // 当前连接设备id
-    // this.initUUID();
     this.serviceUUID = null;
     this.characteristicUUID = null;
   }
