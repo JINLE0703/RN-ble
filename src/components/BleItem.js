@@ -2,7 +2,7 @@ import React from 'react';
 import {StyleSheet, View, Text} from 'react-native';
 import {Button} from '@ant-design/react-native';
 
-export default function ListItem(props) {
+export default function BleItem(props) {
   const {item, connect} = props;
 
   const handlePress = () => {

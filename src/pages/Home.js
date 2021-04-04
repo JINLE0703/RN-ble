@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {StyleSheet, View, FlatList, Alert, Text} from 'react-native';
 import {Button, Modal} from '@ant-design/react-native';
-import ListItem from '../components/ListItem';
+import BleItem from '../components/BleItem';
 
 import {Ble} from '../untils/global';
 
@@ -19,7 +19,6 @@ export default function Home(props) {
     return () => {
       stopScanListener.remove();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -88,7 +87,7 @@ export default function Home(props) {
     <View style={styles.container}>
       <FlatList
         data={bleList}
-        renderItem={({item}) => <ListItem item={item} connect={connect} />}
+        renderItem={({item}) => <BleItem item={item} connect={connect} />}
         keyExtractor={item => item.id}
       />
       <Button
